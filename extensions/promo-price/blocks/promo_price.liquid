@@ -1,0 +1,41 @@
+{% assign has_promo = false %}
+{% for variant in product.variants %}
+  {% if variant.metafields.app.promo.value %}
+    {% assign has_promo = true %}
+  {% endif %}
+{% endfor %}
+
+{% if has_promo %}
+  <div id="promo-pool-{{ block.id }}" class="promo-pool" {{ block.shopify_attributes }}>
+    <script type="application/json" data-promo-pool>
+      {
+        "currency": {{ shop.currency | json }},
+        "variants": {
+          {% for variant in product.variants %}
+            "{{ variant.id }}": {
+              "priceCents": {{ variant.price }},
+              "promo": {% if variant.metafields.app.promo.value %}{{ variant.metafields.app.promo.value | json }}{% else %}null{% endif %}
+            }{% unless forloop.last %},{% endunless %}
+          {% endfor %}
+        }
+      }
+    </script>
+    <div data-promo-pool-display hidden>
+      <p data-promo-pool-price></p>
+      <p><s data-promo-pool-compare></s></p>
+      <p data-promo-pool-remaining></p>
+    </div>
+  </div>
+  <script src="{{ 'promo-price.js' | asset_url }}" defer></script>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Promo price",
+  "target": "section",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": []
+}
+{% endschema %}

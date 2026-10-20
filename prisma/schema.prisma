@@ -1,0 +1,104 @@
+// SQLite for local development. The same models are intended for Postgres in production:
+// switch the datasource provider and keep these fields. Avoid provider-specific types.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:dev.sqlite"
+}
+
+model Session {
+  id                  String    @id
+  shop                String
+  state               String
+  isOnline            Boolean   @default(false)
+  scope               String?
+  expires             DateTime?
+  accessToken         String
+  userId              BigInt?
+  firstName           String?
+  lastName            String?
+  email               String?
+  accountOwner        Boolean   @default(false)
+  locale              String?
+  collaborator        Boolean?  @default(false)
+  emailVerified       Boolean?  @default(false)
+  refreshToken        String?
+  refreshTokenExpires DateTime?
+}
+
+model Shop {
+  id           String     @id @default(cuid())
+  domain       String     @unique
+  ianaTimezone String?
+  discountId   String?
+  campaigns    Campaign[]
+}
+
+model Campaign {
+  id                  String            @id @default(cuid())
+  shopId              String
+  shop                Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  name                String
+  status              String
+  percent             Int
+  kind                String
+  priority            Int               @default(0)
+  landingCollectionId String?
+  timezone            String
+  variants            CampaignVariant[]
+  periods             CampaignPeriod[]
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  @@index([shopId, status])
+}
+
+model CampaignPeriod {
+  id            String   @id @default(cuid())
+  campaignId    String
+  campaign      Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  position      Int
+  startsAtLocal String
+  endsAtLocal   String
+  startsAt      DateTime
+  endsAt        DateTime
+
+  @@unique([campaignId, position])
+}
+
+model CampaignVariant {
+  id           String   @id @default(cuid())
+  campaignId   String
+  campaign     Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  variantId    String
+  productId    String
+  allocatedQty Int
+  soldQty      Int      @default(0)
+
+  @@unique([campaignId, variantId])
+}
+
+model Redemption {
+  id        String   @id @default(cuid())
+  shop      String
+  orderId   String
+  variantId String
+  qty       Int
+  createdAt DateTime @default(now())
+
+  @@unique([orderId, variantId])
+}
+
+model OrderReview {
+  id        String   @id @default(cuid())
+  shop      String
+  orderId   String
+  reason    String
+  createdAt DateTime @default(now())
+
+  @@unique([shop, orderId])
+}
